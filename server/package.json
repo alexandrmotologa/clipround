@@ -1,0 +1,39 @@
+{
+  "name": "clipround-server",
+  "version": "1.0.0",
+  "description": "Media server and Telegram bot for ClipRound video notes and compression",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "telegram",
+    "video-note",
+    "ffmpeg",
+    "fastify",
+    "transcoder"
+  ],
+  "author": "Alexander Motologa",
+  "license": "MIT",
+  "dependencies": {
+    "@fastify/cors": "^10.0.2",
+    "@fastify/multipart": "^9.0.3",
+    "@fastify/static": "^8.1.1",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.1",
+    "fluent-ffmpeg": "^2.1.3",
+    "grammy": "^1.35.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/fluent-ffmpeg": "^2.1.27",
+    "@types/node": "^22.13.9",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.7"
+  }
+}
