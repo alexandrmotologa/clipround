@@ -7,6 +7,7 @@ import { probeMedia } from '../ffmpeg/probe.js';
 import { generateVideoNote } from '../ffmpeg/videoNote.js';
 import { compressVideo } from '../ffmpeg/compressor.js';
 import { extractAudio } from '../ffmpeg/audioExtractor.js';
+import { generateSticker } from '../ffmpeg/sticker.js';
 import { validateTelegramInitData } from '../security/auth.js';
 import { getBotInstance } from '../bot/bot.js';
 import { InputFile } from 'grammy';
@@ -68,9 +69,28 @@ export const mediaRoutes: FastifyPluginAsync = async (fastify) => {
       cropSize: number;
       audioBoost?: number;
       targetDimension?: number;
+      speedMultiplier?: number;
+      flipHorizontal?: boolean;
+      loudnorm?: boolean;
+      colorPreset?: 'none' | 'vivid' | 'bw' | 'warm' | 'cool';
+      textOverlay?: string;
     };
   }>('/api/process/round', async (request, reply) => {
-    const { mediaId, startTime = 0, duration = 60, cropX, cropY, cropSize, audioBoost = 1.0, targetDimension = 480 } = request.body;
+    const {
+      mediaId,
+      startTime = 0,
+      duration = 60,
+      cropX,
+      cropY,
+      cropSize,
+      audioBoost = 1.0,
+      targetDimension = 480,
+      speedMultiplier = 1.0,
+      flipHorizontal = false,
+      loudnorm = false,
+      colorPreset = 'none',
+      textOverlay,
+    } = request.body;
 
     const sourceFile = tempManager.getFile(mediaId);
     if (!sourceFile) {
@@ -90,6 +110,11 @@ export const mediaRoutes: FastifyPluginAsync = async (fastify) => {
         cropSize,
         audioBoostFactor: audioBoost,
         targetDimension,
+        speedMultiplier,
+        flipHorizontal,
+        loudnorm,
+        colorPreset,
+        textOverlay,
       });
 
       const processed = tempManager.registerFile(
@@ -114,6 +139,59 @@ export const mediaRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.code(500).send({
         success: false,
         error: `Transcoding failed: ${(err as Error).message}`,
+      });
+    }
+  });
+
+  // Process circular animated sticker / GIF
+  fastify.post<{
+    Body: {
+      mediaId: string;
+      startTime?: number;
+      duration?: number;
+      cropX: number;
+      cropY: number;
+      cropSize: number;
+      format?: 'webm' | 'gif';
+    };
+  }>('/api/process/sticker', async (request, reply) => {
+    const { mediaId, startTime = 0, duration = 3, cropX, cropY, cropSize, format = 'webm' } = request.body;
+
+    const sourceFile = tempManager.getFile(mediaId);
+    if (!sourceFile) {
+      return reply.code(404).send({ error: 'Source media not found or expired' });
+    }
+
+    const ext = format === 'webm' ? 'webm' : 'gif';
+    const { id: outputId, filePath: outputPath } = tempManager.createFilePath(ext);
+
+    try {
+      await generateSticker({
+        inputPath: sourceFile.filePath,
+        outputPath,
+        startTimeSec: startTime,
+        durationSec: duration,
+        cropX,
+        cropY,
+        cropSize,
+        format,
+        dimension: 512,
+      });
+
+      const mimeType = format === 'webm' ? 'video/webm' : 'image/gif';
+      const processed = tempManager.registerFile(outputId, outputPath, `sticker-${outputId}.${ext}`, mimeType);
+
+      return reply.send({
+        success: true,
+        id: processed.id,
+        url: `/api/media/${processed.id}`,
+        fileSize: processed.fileSize,
+        format,
+      });
+    } catch (err) {
+      return reply.code(500).send({
+        success: false,
+        error: `Sticker creation failed: ${(err as Error).message}`,
       });
     }
   });

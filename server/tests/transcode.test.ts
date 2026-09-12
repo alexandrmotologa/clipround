@@ -4,12 +4,15 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { generateVideoNote } from '../src/ffmpeg/videoNote.js';
 import { compressVideo } from '../src/ffmpeg/compressor.js';
 import { extractAudio } from '../src/ffmpeg/audioExtractor.js';
+import { generateSticker } from '../src/ffmpeg/sticker.js';
 import { probeMedia } from '../src/ffmpeg/probe.js';
 
 const TEST_DIR = path.resolve(__dirname, 'fixtures');
 const DEMO_SAMPLE = path.resolve(__dirname, '../../demo/sample.mp4');
 const TEST_INPUT = path.join(TEST_DIR, 'input_sample.mp4');
 const TEST_OUTPUT_ROUND = path.join(TEST_DIR, 'output_round.mp4');
+const TEST_OUTPUT_SPEED = path.join(TEST_DIR, 'output_speed.mp4');
+const TEST_OUTPUT_STICKER = path.join(TEST_DIR, 'output_sticker.webm');
 const TEST_OUTPUT_COMPRESS = path.join(TEST_DIR, 'output_compressed.mp4');
 const TEST_OUTPUT_AUDIO = path.join(TEST_DIR, 'output_audio.mp3');
 
@@ -59,6 +62,48 @@ describe('FFmpeg Transcoding Pipeline', () => {
     expect(probe.audioCodec).toBe('aac');
     expect(probe.duration).toBeGreaterThan(2);
     expect(probe.duration).toBeLessThanOrEqual(4);
+  });
+
+  it('handles speed multiplier, horizontal flip, and loudnorm', async () => {
+    await generateVideoNote({
+      inputPath: TEST_INPUT,
+      outputPath: TEST_OUTPUT_SPEED,
+      startTimeSec: 0,
+      durationSec: 4,
+      cropX: 280,
+      cropY: 0,
+      cropSize: 720,
+      speedMultiplier: 1.5,
+      flipHorizontal: true,
+      loudnorm: true,
+      colorPreset: 'vivid',
+    });
+
+    expect(fs.existsSync(TEST_OUTPUT_SPEED)).toBe(true);
+    const probe = await probeMedia(TEST_OUTPUT_SPEED);
+    expect(probe.width).toBe(480);
+    expect(probe.height).toBe(480);
+    // With 1.5x speed, 4 seconds becomes ~2.66 seconds
+    expect(probe.duration).toBeLessThan(3.5);
+  });
+
+  it('generates circular animated sticker in webm format', async () => {
+    await generateSticker({
+      inputPath: TEST_INPUT,
+      outputPath: TEST_OUTPUT_STICKER,
+      startTimeSec: 0,
+      durationSec: 2,
+      cropX: 280,
+      cropY: 0,
+      cropSize: 720,
+      format: 'webm',
+      dimension: 512,
+    });
+
+    expect(fs.existsSync(TEST_OUTPUT_STICKER)).toBe(true);
+    const probe = await probeMedia(TEST_OUTPUT_STICKER);
+    expect(probe.width).toBe(512);
+    expect(probe.height).toBe(512);
   });
 
   it('compresses video using preset', async () => {

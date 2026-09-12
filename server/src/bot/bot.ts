@@ -1,5 +1,6 @@
 import { Bot } from 'grammy';
 import { handleStartCommand, handleHelpCommand } from './commands/start.js';
+import { handleSettingsCommand } from './commands/settings.js';
 import { handleIncomingVideo, handleCallbackQuery } from './videoReceiver.js';
 
 let botInstance: Bot | null = null;
@@ -22,6 +23,7 @@ export async function initTelegramBot(): Promise<void> {
 
     bot.command('start', handleStartCommand);
     bot.command('help', handleHelpCommand);
+    bot.command('settings', handleSettingsCommand);
 
     bot.on(['message:video', 'message:document'], handleIncomingVideo);
     bot.on('callback_query:data', handleCallbackQuery);

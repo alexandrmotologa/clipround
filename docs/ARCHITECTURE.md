@@ -19,7 +19,8 @@ ClipRound coordinates three core parts: a media transcoding pipeline based on FF
             v                                               v
 +-----------+-----------+                       +-----------+-----------+
 |    grammY Bot Layer   |                       |    FFmpeg Transcoder  |
-|  (Long Polling Loop)  |                       |  (Crops, CRF, Audio)  |
+|  (Long Polling Loop)  |                       |  (Crops, CRF, Audio,  |
+|  (Commands / Settings)|                       |   Speed, Stickers)    |
 +-----------------------+                       +-----------------------+
 ```
 
@@ -31,7 +32,9 @@ The backend runs on Fastify and TypeScript. It handles multipart file uploads, p
 
 Key routes:
 - `POST /api/upload`: Receives uploaded video clips up to 100 MB.
-- `POST /api/process/round`: Crops, trims, and converts video to 1:1 circular format.
+- `POST /api/download-url`: Downloads direct video URLs into temporary storage for instant editing.
+- `POST /api/process/round`: Crops, trims, applies speed, color, horizontal flip, and loudnorm to 1:1 circular video notes.
+- `POST /api/process/sticker`: Exports circular clips as animated `.webm` stickers (VP9) or GIFs.
 - `POST /api/process/compress`: Compresses video with adaptive CRF or target bitrates.
 - `POST /api/process/extract`: Extracts audio track as MP3 or AAC.
 - `GET /api/media/:id`: Streams processed video files with partial HTTP range request support.
@@ -41,8 +44,9 @@ Key routes:
 
 All transcoding is executed through native FFmpeg processes spawned via `fluent-ffmpeg`. The pipeline enforces specific encoding parameters:
 
-- Video Note generation: Uses `crop` and `scale=480:480` filters, `libx264` with `yuv420p` pixel format, `-movflags +faststart` for immediate streaming, and `aac` audio at 128 kbps.
-- Video Compression: Calculates target bitrates based on duration and desired file size (for example, under 10 MB or 25 MB). It applies `crf` controls (23 to 32) and modern presets to retain visual clarity.
+- Video Note generation: Uses `crop` and `scale=480:480` filters, `setsar=1:1`, `libx264` with `yuv420p` pixel format, `-movflags +faststart` for immediate streaming, and `aac` audio at 128 kbps. Optional filters include `hflip`, `setpts` for speed scaling, `drawtext` for caption burning, and `loudnorm` for speech volume leveling.
+- Sticker generation: Formats circular clips as silent 512x512 WebM (VP9 codec) or looping animated GIFs.
+- Video Compression: Calculates target bitrates based on duration and desired file size (for example, under 10 MB or 25 MB). It applies `crf` controls (18 to 36) and modern presets to retain visual clarity.
 - Audio Extraction: Strips video streams (`-vn`) and encodes directly to 192 kbps MP3 or copy/AAC.
 
 ### 3. Ephemeral Storage Manager
@@ -51,17 +55,20 @@ Uploaded videos and generated outputs are stored in a dedicated temporary folder
 
 ### 4. grammY Bot Layer
 
-The bot uses Telegram's long-polling mechanism (`getUpdates`), which eliminates the need for a public HTTPS domain or webhook reverse proxy. When a user sends or forwards a video to the bot:
+The bot uses Telegram's long-polling mechanism (`getUpdates`), which eliminates the need for a public HTTPS domain or webhook reverse proxy. When a user sends or forwards a video or video link to the bot:
 1. The bot downloads the file to temporary storage.
 2. The bot sends back inline buttons with direct options: crop to round video note, compress, or rip audio.
 3. If the user chooses to crop, the bot provides a direct link or Mini App button to open the web studio with the video ID preloaded.
-4. Once processed, the bot sends the finished file back using `sendVideoNote`.
+4. Users can configure resolution and audio preferences using `/settings`.
+5. Once processed, the bot sends the finished file back using `sendVideoNote`.
 
 ### 5. Web Studio (React 19 + Vite)
 
 The web studio is an interactive single-page application. It provides:
-- A circular viewfinder mask that allows panning and zooming the video to center faces or subjects.
-- A timeline trimmer slider with 0.1-second precision and real-time second counters.
-- Playback controls synchronized with timeline markers.
+- In-studio webcam recorder with circular viewfinder, countdown, and 60-second limit.
+- Circular viewfinder mask that allows panning and zooming the video to center faces or subjects.
+- Timeline trimmer slider with Web Audio API waveform visualization and 0.1-second precision.
+- Playback speed adjustment, horizontal flip toggle, audio speech normalizer, and color grading filters.
 - Telegram WebApp SDK integration for haptic feedback and native main-button triggers.
-- A standalone fallback mode that works directly in any desktop browser without Telegram headers.
+- Direct URL video import and animated sticker export.
+- Standalone fallback mode that works directly in any desktop browser without Telegram headers.

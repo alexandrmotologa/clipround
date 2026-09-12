@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Sparkles, AlertCircle, Music } from 'lucide-react';
+import { Upload, Sparkles, AlertCircle, Music, Camera, Link2 } from 'lucide-react';
 import { CircularViewfinder, type CropParameters } from './components/CircularViewfinder';
 import { TimelineTrimmer } from './components/TimelineTrimmer';
 import { AudioControls } from './components/AudioControls';
+import { EffectsBar, type EffectsState } from './components/EffectsBar';
 import { CompressionPanel } from './components/CompressionPanel';
 import { AudioRipperPanel } from './components/AudioRipperPanel';
 import { ResultModal, type TranscodeResult } from './components/ResultModal';
+import { CameraRecorderModal } from './components/CameraRecorderModal';
+import { UrlImportModal } from './components/UrlImportModal';
 import { useTelegram } from './hooks/useTelegram';
 import { useVideoPlayer } from './hooks/useVideoPlayer';
 
@@ -41,8 +44,22 @@ export function App() {
   });
   const [audioBoost, setAudioBoost] = useState<number>(1.0);
 
+  // Advanced effects
+  const [effects, setEffects] = useState<EffectsState>({
+    speedMultiplier: 1.0,
+    flipHorizontal: false,
+    loudnorm: false,
+    colorPreset: 'none',
+    textOverlay: '',
+  });
+
+  // Modals
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isUrlImportOpen, setIsUrlImportOpen] = useState(false);
+
   // Processing & modal state
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isExportingSticker, setIsExportingSticker] = useState(false);
   const [progressStatus, setProgressStatus] = useState<string>('');
   const [result, setResult] = useState<TranscodeResult | null>(null);
   const [isSendingTelegram, setIsSendingTelegram] = useState(false);
@@ -58,7 +75,6 @@ export function App() {
       setMediaId(idFromQuery);
       setVideoSrc(`/api/media/${idFromQuery}`);
       setFileName(`telegram-${idFromQuery.slice(0, 8)}.mp4`);
-      // Fetch probe metadata
       fetch(`/api/probe/${idFromQuery}`)
         .then((res) => res.json())
         .then((data) => {
@@ -101,7 +117,6 @@ export function App() {
       setFileSizeMb(data.fileSize / (1024 * 1024));
       triggerHaptic('success');
     } catch (err) {
-      // If server upload fails (e.g. running purely via Vite preview without server), load locally via blob
       console.warn('Server upload not reachable, loading via local object URL:', err);
       const localUrl = URL.createObjectURL(file);
       setVideoSrc(localUrl);
@@ -131,6 +146,11 @@ export function App() {
         cropSize: cropParams.cropSize,
         audioBoost,
         targetDimension: 480,
+        speedMultiplier: effects.speedMultiplier,
+        flipHorizontal: effects.flipHorizontal,
+        loudnorm: effects.loudnorm,
+        colorPreset: effects.colorPreset,
+        textOverlay: effects.textOverlay,
       };
 
       const res = await fetch('/api/process/round', {
@@ -159,6 +179,50 @@ export function App() {
     } finally {
       setIsProcessing(false);
       setProgressStatus('');
+    }
+  };
+
+  // Process circular animated sticker
+  const handleExportSticker = async (format: 'webm' | 'gif' = 'webm') => {
+    setIsExportingSticker(true);
+    triggerHaptic('medium');
+
+    try {
+      const payload = {
+        mediaId,
+        startTime: trimRange[0],
+        duration: Math.min(3, trimRange[1] - trimRange[0]),
+        cropX: cropParams.cropX,
+        cropY: cropParams.cropY,
+        cropSize: cropParams.cropSize,
+        format,
+      };
+
+      const res = await fetch('/api/process/sticker', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Sticker creation failed');
+      }
+
+      const data = await res.json();
+      setResult({
+        id: data.id,
+        url: data.url,
+        fileSize: data.fileSize,
+        type: 'sticker',
+        format,
+      });
+      triggerHaptic('success');
+    } catch (err) {
+      alert(`Sticker export failed: ${(err as Error).message}`);
+      triggerHaptic('error');
+    } finally {
+      setIsExportingSticker(false);
     }
   };
 
@@ -285,7 +349,28 @@ export function App() {
           </div>
         </div>
 
+        {/* Action Header Buttons */}
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsCameraOpen(true)}
+            className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-slate-200 border border-slate-700/80 flex items-center gap-1.5 transition-colors shadow-sm"
+            title="Record with Camera"
+          >
+            <Camera className="w-3.5 h-3.5 text-rose-400" />
+            <span className="hidden sm:inline">Record</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsUrlImportOpen(true)}
+            className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-slate-200 border border-slate-700/80 flex items-center gap-1.5 transition-colors shadow-sm"
+            title="Paste Video URL"
+          >
+            <Link2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">Link</span>
+          </button>
+
           <input
             ref={fileInputRef}
             type="file"
@@ -299,10 +384,10 @@ export function App() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-slate-200 border border-slate-700/80 flex items-center gap-1.5 transition-colors shadow-sm"
+            className="px-3 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-xs font-semibold text-white flex items-center gap-1.5 transition-colors shadow-glow-blue"
           >
-            <Upload className="w-3.5 h-3.5 text-sky-400" />
-            <span>Upload Video</span>
+            <Upload className="w-3.5 h-3.5 text-white" />
+            <span>Upload</span>
           </button>
         </div>
       </header>
@@ -316,11 +401,11 @@ export function App() {
         ) : (
           <span className="text-slate-400 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Standalone Studio Mode (Pre-loaded Demo)</span>
+            <span>Studio Mode</span>
           </span>
         )}
         <span className="font-mono text-slate-500 text-[11px] truncate max-w-[200px]">
-          {fileName}
+          {fileName} ({fileSizeMb.toFixed(1)} MB)
         </span>
       </div>
 
@@ -386,16 +471,23 @@ export function App() {
               onCropChange={setCropParams}
             />
 
-            {/* Timeline Trimmer (0-60s) */}
+            {/* Timeline Trimmer with Visual Audio Waveform */}
             <TimelineTrimmer
               duration={duration}
               currentTime={currentTime}
               trimRange={trimRange}
               isPlaying={isPlaying}
+              videoSrc={videoSrc}
               onTrimChange={setTrimRange}
               onTogglePlay={togglePlay}
               onSeek={seek}
               onStep={stepFrame}
+            />
+
+            {/* Advanced Effects & Speed Controls */}
+            <EffectsBar
+              effects={effects}
+              onChange={setEffects}
             />
 
             {/* Audio Boost Controls */}
@@ -423,7 +515,6 @@ export function App() {
 
         {activeTab === 'compress' && (
           <>
-            {/* Standard Preview Player for Compression */}
             <div className="w-full rounded-2xl overflow-hidden bg-black aspect-video border border-slate-800 shadow-xl">
               <video
                 src={videoSrc}
@@ -444,7 +535,6 @@ export function App() {
 
         {activeTab === 'extract' && (
           <>
-            {/* Standard Preview Player for Audio Extraction */}
             <div className="w-full rounded-2xl overflow-hidden bg-black aspect-video border border-slate-800 shadow-xl">
               <video
                 src={videoSrc}
@@ -467,8 +557,29 @@ export function App() {
         result={result}
         onClose={() => setResult(null)}
         onSendTelegram={handleSendTelegram}
+        onExportSticker={handleExportSticker}
         isSendingTelegram={isSendingTelegram}
         canSendTelegram={isTelegram || !!user}
+        isExportingSticker={isExportingSticker}
+      />
+
+      {/* Camera Recorder Modal */}
+      <CameraRecorderModal
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onRecordingComplete={handleFileUpload}
+      />
+
+      {/* URL Import Modal */}
+      <UrlImportModal
+        isOpen={isUrlImportOpen}
+        onClose={() => setIsUrlImportOpen(false)}
+        onImportSuccess={(data) => {
+          setMediaId(data.id);
+          setVideoSrc(data.url);
+          setFileName(data.fileName);
+          setFileSizeMb(data.fileSize / (1024 * 1024));
+        }}
       />
     </div>
   );

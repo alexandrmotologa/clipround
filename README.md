@@ -5,10 +5,17 @@ ClipRound converts standard video files into official circular Telegram video no
 ## Features
 
 - Converts rectangular videos into 1:1 square MP4 files formatted specifically for Telegram circular video notes (`sendVideoNote`).
+- In-studio camera recorder allowing users to record their webcam directly inside the 1:1 circular frame with a 60-second limit and countdown.
 - Interactive circular viewfinder with drag-to-pan and zoom controls to frame subjects accurately.
-- Dual-handle timeline trimmer enforcing Telegram's 60-second limit with frame-stepping controls.
-- Audio volume adjustment (mute up to 2.5x gain) and audio track ripper (MP3 / AAC).
+- Timeline trimmer with Web Audio API waveform visualization and frame-stepping controls (0.1s precision).
+- Playback speed adjustment (0.5x, 0.75x, 1.0x, 1.25x, 1.5x, 2.0x) to fit longer clips into Telegram's 60-second limit.
+- Horizontal mirror toggle to fix flipped selfie camera recordings.
+- Speech normalizer based on EBU R128 (`loudnorm`) and manual audio gain up to 2.5x.
+- Burn-in text captions and color grading presets (Vivid, B&W, Warm Vintage, Cool Breeze).
+- Circular animated sticker export (`.webm` with VP9) for sticker sets.
+- Direct URL video downloader to fetch web clips without local downloading.
 - Video compressor with presets for Telegram size limits (10 MB, 25 MB, 50 MB) and custom CRF controls.
+- Audio track ripper supporting MP3 and AAC.
 - Standalone browser studio with a pre-loaded sample video for local testing without bot tokens or external domains.
 - Automatic disk cleanup for ephemeral media after 60 minutes.
 
@@ -88,7 +95,7 @@ To connect the bot to Telegram:
 1. Create a bot with [@BotFather](https://t.me/BotFather) and copy the bot token.
 2. In `.env`, set `TELEGRAM_BOT_TOKEN=your_token_here` and `DEMO_MODE=false`.
 3. If hosting publicly, create a Mini App in @BotFather pointing to your HTTPS domain.
-4. Restart the server. Send any video to your bot in Telegram. The bot will reply with action buttons to crop into a video note, compress, or rip audio.
+4. Restart the server. Send any video or direct video link to your bot in Telegram. The bot will reply with action buttons to crop into a video note, compress, or rip audio.
 
 ## Documentation
 

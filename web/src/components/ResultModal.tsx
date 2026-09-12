@@ -1,12 +1,12 @@
 import React from 'react';
-import { X, Download, Send, CheckCircle2 } from 'lucide-react';
+import { X, Download, Send, CheckCircle2, Sparkles } from 'lucide-react';
 
 export interface TranscodeResult {
   id: string;
   url: string;
   fileSize: number;
   duration?: number;
-  type: 'round' | 'compress' | 'extract';
+  type: 'round' | 'compress' | 'extract' | 'sticker';
   format?: string;
 }
 
@@ -14,25 +14,32 @@ interface Props {
   result: TranscodeResult | null;
   onClose: () => void;
   onSendTelegram: (mediaId: string) => void;
+  onExportSticker?: (format: 'webm' | 'gif') => void;
   isSendingTelegram: boolean;
   canSendTelegram: boolean;
+  isExportingSticker?: boolean;
 }
 
 export const ResultModal: React.FC<Props> = ({
   result,
   onClose,
   onSendTelegram,
+  onExportSticker,
   isSendingTelegram,
   canSendTelegram,
+  isExportingSticker = false,
 }) => {
   if (!result) return null;
 
   const sizeMb = (result.fileSize / (1024 * 1024)).toFixed(2);
   const isRound = result.type === 'round';
   const isAudio = result.type === 'extract';
+  const isSticker = result.type === 'sticker';
 
   const downloadName = isAudio
     ? `clipround-audio.${result.format || 'mp3'}`
+    : isSticker
+    ? `clipround-sticker.${result.format || 'webm'}`
     : isRound
     ? 'telegram-video-note.mp4'
     : 'clipround-compressed.mp4';
@@ -57,6 +64,8 @@ export const ResultModal: React.FC<Props> = ({
           <h2 className="text-lg font-bold text-white">
             {isRound
               ? 'Circular Video Note Ready'
+              : isSticker
+              ? 'Circular Animated Sticker Ready'
               : isAudio
               ? 'Audio Track Extracted'
               : 'Video Compressed'}
@@ -70,14 +79,14 @@ export const ResultModal: React.FC<Props> = ({
 
         {/* Media Preview Player */}
         <div className="flex items-center justify-center w-full py-2">
-          {isRound ? (
+          {isRound || isSticker ? (
             <div className="w-56 h-56 rounded-full overflow-hidden shadow-2xl ring-4 ring-sky-500/70 bg-black flex items-center justify-center">
               <video
                 src={result.url}
                 autoPlay
                 loop
                 playsInline
-                controls
+                controls={!isSticker}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -109,9 +118,9 @@ export const ResultModal: React.FC<Props> = ({
               {result.duration.toFixed(1)}s
             </span>
           )}
-          {isRound && (
+          {(isRound || isSticker) && (
             <span className="px-2.5 py-1 rounded-md bg-slate-800/80 border border-slate-700 text-sky-400">
-              480x480 (1:1)
+              {isSticker ? '512x512' : '480x480 (1:1)'}
             </span>
           )}
         </div>
@@ -127,6 +136,18 @@ export const ResultModal: React.FC<Props> = ({
             >
               <Send className="w-4 h-4" />
               <span>{isSendingTelegram ? 'Sending to Telegram...' : 'Send into Telegram Chat'}</span>
+            </button>
+          )}
+
+          {isRound && onExportSticker && (
+            <button
+              type="button"
+              disabled={isExportingSticker}
+              onClick={() => onExportSticker('webm')}
+              className="w-full py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-750 text-sky-300 font-semibold text-xs flex items-center justify-center gap-2 border border-sky-500/30 transition-all"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+              <span>{isExportingSticker ? 'Exporting Sticker...' : 'Convert to Animated Sticker (.webm)'}</span>
             </button>
           )}
 

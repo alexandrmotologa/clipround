@@ -7,6 +7,7 @@ import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import { mediaRoutes } from './routes/mediaApi.js';
 import { previewRoutes } from './routes/previewApi.js';
+import { urlDownloadRoutes } from './routes/urlDownloadApi.js';
 import { initTelegramBot } from './bot/bot.js';
 
 const fastify = Fastify({
@@ -44,6 +45,7 @@ async function main() {
   // Register API routes
   await fastify.register(previewRoutes);
   await fastify.register(mediaRoutes);
+  await fastify.register(urlDownloadRoutes);
 
   // Serve static web build if present
   const staticCandidates = [
