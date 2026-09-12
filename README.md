@@ -1,6 +1,45 @@
-# ClipRound
+<p align="center">
+  <img src="docs/images/logo.png?raw=true" alt="ClipRound Logo" width="130" style="border-radius: 24px;" />
+</p>
+
+<h1 align="center">ClipRound</h1>
+
+<p align="center">
+  <strong>Circular Telegram Video Note Studio, Video Compressor & Audio Ripper</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-20+-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/Fastify-5.x-black?style=flat-square&logo=fastify&logoColor=white" alt="Fastify" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19" />
+  <img src="https://img.shields.io/badge/FFmpeg-8.x-007808?style=flat-square&logo=ffmpeg&logoColor=white" alt="FFmpeg" />
+  <img src="https://img.shields.io/badge/grammY-Telegram_Bot-24A1DE?style=flat-square&logo=telegram&logoColor=white" alt="Telegram Bot" />
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License" />
+</p>
+
+---
 
 ClipRound converts standard video files into official circular Telegram video notes, compresses oversized media for mobile chat sharing, and extracts audio tracks. It runs as both a Telegram Mini App connected to a long-polling bot and as a standalone web studio for local editing in any desktop or mobile browser.
+
+ClipRound uses the **Oculus Owl** mascot because of the owl's distinctive circular facial disc, capturing and focusing audio and visual streams into an exact circular aperture with pin-point precision.
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/images/screenshot_circular_studio.png?raw=true" alt="ClipRound Circular Viewfinder Studio" width="850" />
+</p>
+
+<p align="center">
+  <em>Interactive 1:1 circular viewfinder studio with waveform timeline trimmer, playback speed controls, and color grading</em>
+</p>
+
+<p align="center">
+  <img src="docs/images/screenshot_compressor.png?raw=true" alt="ClipRound Smart Video Compressor" width="850" />
+</p>
+
+<p align="center">
+  <em>Smart video compressor with quick Telegram mobile sharing presets and custom CRF tuning</em>
+</p>
 
 ## Features
 
