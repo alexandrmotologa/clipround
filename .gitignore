@@ -1,0 +1,44 @@
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Temporary media and storage
+tmp/
+temp/
+storage/temp/
+uploads/
+*.mp4
+*.m4v
+*.mov
+*.mp3
+*.aac
+*.wav
+!demo/*.mp4
+!web/public/*.mp4
+
+# OS generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE settings
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

@@ -1,0 +1,21 @@
+services:
+  clipround:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clipround
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - HOST=0.0.0.0
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-mock_token}
+      - DEMO_MODE=${DEMO_MODE:-true}
+      - STORAGE_DIR=/tmp/clipround/storage
+      - MAX_FILE_AGE_MINUTES=60
+    volumes:
+      - clipround_storage:/tmp/clipround/storage
+
+volumes:
+  clipround_storage:
